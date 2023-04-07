@@ -1,3 +1,4 @@
+ARG arch=x86_64
 # Use the exact conda, mamba versions as used in bioconda-recipes' builds.
 ARG bioconda_utils_version='1.1.3'
 FROM quay.io/bioconda/bioconda-utils-build-env-cos7:${bioconda_utils_version} as bioconda-build-env
@@ -14,6 +15,7 @@ WORKDIR /tmp/work
 COPY --from=bioconda-build-env /tmp/requirements.txt ./
 COPY install-conda print-env-activate create-env ./
 RUN yum install -y wget && wget -o ./miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-$(uname -m).sh
+ADD https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${arch}.sh ./miniconda.sh
 
 RUN ./install-conda ./requirements.txt /opt/create-env
 
