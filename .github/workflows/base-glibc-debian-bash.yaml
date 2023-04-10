@@ -1,4 +1,4 @@
-name: 'Build & Push: base-glibc-debian-bash 2'
+name: 'Build & Push: base-glibc-debian-bash'
 on:
   push:
     branches:
@@ -20,7 +20,7 @@ jobs:
       # version tags or checksum IDs, but not via "latest".
       IMAGE_VERSION: '3.0.0'
       IMAGE_NAME: base-glibc-debian-bash
-      DEBIAN_VERSION: '10.12'
+      DEBIAN_VERSION: '10.9'
 
     steps:
     - uses: actions/checkout@v4
@@ -140,7 +140,7 @@ jobs:
         registry: ${{ secrets.QUAY_BIOCONDA_REPO }}
         username: ${{ secrets.QUAY_BIOCONDA_USERNAME }}
         password: ${{ secrets.QUAY_BIOCONDA_TOKEN }}
-      
+
     - if: ${{ github.ref == 'refs/heads/main' }}
       name: Test Pushed
       run: |
