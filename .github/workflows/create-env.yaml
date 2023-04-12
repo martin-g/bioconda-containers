@@ -14,6 +14,16 @@ on:
 jobs:
   build:
     name: Build & Push
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            base_image: quay.io/bioconda/bioconda-utils-build-env-cos7
+            bioconda_utils_version: 'latest'
+          - arch: arm64
+            base_image: ghcr.io/Yikun/bioconda-utils-build-env-cos7-aarch64
+            bioconda_utils_version: 'latest'
     runs-on: ubuntu-20.04
     env:
       IMAGE_VERSION: '3.0.0'
@@ -38,12 +48,14 @@ jobs:
         tags: >-
           latest
           ${{ env.IMAGE_VERSION }}
-        archs: amd64
+        archs: ${{ matrix.arch }}
         context: ./images/${{ env.IMAGE_NAME }}
         containerfiles: |
           ./images/${{ env.IMAGE_NAME }}/Dockerfile
         build-args: |
-          bioconda_utils_version=${{ steps.prepare.outputs.bioconda_utils_version }}
+          base_image=${{ matrix.base_image }}
+          bioconda_utils_version=${{ matrix.bioconda_utils_version }}
+# bioconda_utils_version=${{ steps.prepare.outputs.bioconda_utils_version }}
 
     - name: Test
       run: |
