@@ -1,6 +1,7 @@
 # Use the exact conda, mamba versions as used in bioconda-recipes' builds.
 ARG bioconda_utils_version='1.1.3'
-ARG base_image=quay.io/bioconda/bioconda-utils-build-env-cos7
+ARG base_image='quay.io/bioconda/bioconda-utils-build-env-cos7'
+
 FROM ${base_image}:${bioconda_utils_version} as bioconda-build-env
 RUN /opt/conda/bin/conda list \
       --export '^(conda|mamba)$' \

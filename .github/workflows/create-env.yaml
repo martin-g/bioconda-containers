@@ -19,11 +19,13 @@ jobs:
       matrix:
         include:
           - arch: amd64
-            base_image: quay.io/bioconda/bioconda-utils-build-env-cos7
+            base_image: 'quay.io/bioconda/bioconda-utils-build-env-cos7'
             bioconda_utils_version: 'latest'
+            unamem: 'x86_64'
           - arch: arm64
-            base_image: ghcr.io/Yikun/bioconda-utils-build-env-cos7-aarch64
+            base_image: 'ghcr.io/yikun/bioconda-utils-build-env-cos7-aarch64'
             bioconda_utils_version: 'latest'
+            unamem: 'aarch64'
     runs-on: ubuntu-20.04
     env:
       IMAGE_VERSION: '3.0.0'
@@ -44,8 +46,8 @@ jobs:
       id: buildah-build
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ env.IMAGE_NAME }}
-        tags: >-
+        image: ${{ env.IMAGE_NAME }}-${{ matrix.unamem }}
+        tags: |
           latest
           ${{ env.IMAGE_VERSION }}
         archs: ${{ matrix.arch }}
@@ -55,7 +57,7 @@ jobs:
         build-args: |
           base_image=${{ matrix.base_image }}
           bioconda_utils_version=${{ matrix.bioconda_utils_version }}
-# bioconda_utils_version=${{ steps.prepare.outputs.bioconda_utils_version }}
+          conda_arch=${{ matrix.unamem }}
 
     - name: Test
       run: |
@@ -110,15 +112,25 @@ jobs:
           done
         done
 
-    - if: ${{ github.ref == 'refs/heads/main' }}
+    - if: always()
+      name: Login to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - if: always()
+#      if: ${{ github.ref == 'refs/heads/main' }}
       name: Push
       uses: redhat-actions/push-to-registry@v2
       with:
         image: ${{ steps.buildah-build.outputs.image }}
         tags: ${{ steps.buildah-build.outputs.tags }}
-        registry: ${{ secrets.QUAY_BIOCONDA_REPO }}
-        username: ${{ secrets.QUAY_BIOCONDA_USERNAME }}
-        password: ${{ secrets.QUAY_BIOCONDA_TOKEN }}
+        # registry: ${{ secrets.QUAY_BIOCONDA_REPO }}
+        registry: ghcr.io/martin-g
+        # username: ${{ secrets.QUAY_BIOCONDA_USERNAME }}
+        # password: ${{ secrets.QUAY_BIOCONDA_TOKEN }}
 
     - if: ${{ github.ref == 'refs/heads/main' }}
       name: Test Pushed
