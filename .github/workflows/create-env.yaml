@@ -74,6 +74,7 @@ jobs:
 
     - name: Test
       run: |
+        set -x
         image='${{ steps.buildah-build.outputs.image }}'
         ids="$(
           for tag in ${{ steps.buildah-build.outputs.tags }} ; do
