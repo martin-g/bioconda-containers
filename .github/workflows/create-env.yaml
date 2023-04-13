@@ -37,10 +37,11 @@ jobs:
     - name: Prepare
       id: prepare
       run: |
-        curl -sSL \
+        bioconda_utils_version_output=$(curl -sSL \
           'https://raw.githubusercontent.com/bioconda/bioconda-common/master/common.sh' \
           | sed -n \
-            's/BIOCONDA_UTILS_TAG=v/::set-output name=bioconda_utils_version::/p'
+            's/BIOCONDA_UTILS_TAG=v/bioconda_utils_version=/p')
+        echo "${bioconda_utils_version_output}" >> $GITHUB_OUTPUT
 
         if [ ${{ matrix.unamem }} == 'x86_64' ]; then
           echo "image_suffix=" >> $GITHUB_OUTPUT
