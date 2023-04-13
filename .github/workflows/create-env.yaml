@@ -42,11 +42,23 @@ jobs:
           | sed -n \
             's/BIOCONDA_UTILS_TAG=v/::set-output name=bioconda_utils_version::/p'
 
+        if [ ${{ matrix.unamem }} == 'x86_64' ]; then
+          echo "image_suffix=" >> $GITHUB_OUTPUT
+        else
+          echo "image_suffix=-${{ matrix.unamem }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Set up QEMU
+      if: matrix.arch != 'amd64'
+      uses: docker/setup-qemu-action@v1
+      with:
+        platforms: ${{ matrix.arch }}
+
     - name: Build
       id: buildah-build
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ env.IMAGE_NAME }}-${{ matrix.unamem }}
+        image: ${{ env.IMAGE_NAME }}${{ steps.prepare.outputs.image_suffix }}
         tags: |
           latest
           ${{ env.IMAGE_VERSION }}
