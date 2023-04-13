@@ -60,9 +60,7 @@ jobs:
       uses: redhat-actions/buildah-build@v2
       with:
         image: ${{ env.IMAGE_NAME }}${{ steps.prepare.outputs.image_suffix }}
-        tags: |
-          latest
-          ${{ env.IMAGE_VERSION }}
+        tags: latest ${{ env.IMAGE_VERSION }}
         archs: ${{ matrix.arch }}
         context: ./images/${{ env.IMAGE_NAME }}
         containerfiles: |
