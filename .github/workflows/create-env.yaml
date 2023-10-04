@@ -21,11 +21,11 @@ jobs:
           - arch: amd64
             base_image: 'quay.io/bioconda/bioconda-utils-build-env-cos7'
             bioconda_utils_version: 'latest'
-            unamem: 'x86_64'
+            uname_m: 'x86_64'
           - arch: arm64
-            base_image: 'ghcr.io/yikun/bioconda-utils-build-env-cos7-aarch64'
+            base_image: 'ghcr.io/bioconda/bioconda-utils-build-env-cos7-aarch64'
             bioconda_utils_version: 'latest'
-            unamem: 'aarch64'
+            uname_m: 'aarch64'
     runs-on: ubuntu-20.04
     env:
       IMAGE_VERSION: '3.0.0'
@@ -43,10 +43,10 @@ jobs:
             's/BIOCONDA_UTILS_TAG=v/bioconda_utils_version=/p')
         echo "${bioconda_utils_version_output}" >> $GITHUB_OUTPUT
 
-        if [ ${{ matrix.unamem }} == 'x86_64' ]; then
+        if [ ${{ matrix.uname_m }} == 'x86_64' ]; then
           echo "image_suffix=" >> $GITHUB_OUTPUT
         else
-          echo "image_suffix=-${{ matrix.unamem }}" >> $GITHUB_OUTPUT
+          echo "image_suffix=-${{ matrix.uname_m }}" >> $GITHUB_OUTPUT
         fi
 
     - name: Set up QEMU
@@ -68,7 +68,7 @@ jobs:
         build-args: |
           base_image=${{ matrix.base_image }}
           bioconda_utils_version=${{ matrix.bioconda_utils_version }}
-          conda_arch=${{ matrix.unamem }}
+          conda_arch=${{ matrix.uname_m }}
 
     - name: Test
       run: |
