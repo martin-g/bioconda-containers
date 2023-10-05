@@ -14,6 +14,18 @@ on:
 jobs:
   build:
     name: Build & Push
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            base_image: 'quay.io/bioconda/bioconda-utils-build-env-cos7'
+            bioconda_utils_version: 'latest'
+            uname_m: 'x86_64'
+          - arch: arm64
+            base_image: 'quay.io/bioconda/bioconda-utils-build-env-cos7-aarch64'
+            bioconda_utils_version: 'latest'
+            uname_m: 'aarch64'
     runs-on: ubuntu-20.04
     env:
       IMAGE_VERSION: '3.0.0'
@@ -25,28 +37,42 @@ jobs:
     - name: Prepare
       id: prepare
       run: |
-        curl -sSL \
+        bioconda_utils_version_output=$(curl -sSL \
           'https://raw.githubusercontent.com/bioconda/bioconda-common/master/common.sh' \
           | sed -n \
-            's/BIOCONDA_UTILS_TAG=v/::set-output name=bioconda_utils_version::/p'
+            's/BIOCONDA_UTILS_TAG=v/bioconda_utils_version=/p')
+        echo "${bioconda_utils_version_output}" >> $GITHUB_OUTPUT
+
+        if [ ${{ matrix.uname_m }} == 'x86_64' ]; then
+          echo "image_suffix=" >> $GITHUB_OUTPUT
+        else
+          echo "image_suffix=-${{ matrix.uname_m }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Set up QEMU
+      if: matrix.arch != 'amd64'
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: ${{ matrix.arch }}
 
     - name: Build
       id: buildah-build
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ env.IMAGE_NAME }}
-        tags: >-
-          latest
-          ${{ env.IMAGE_VERSION }}
-        archs: amd64
+        image: ${{ env.IMAGE_NAME }}${{ steps.prepare.outputs.image_suffix }}
+        tags: latest ${{ env.IMAGE_VERSION }}
+        archs: ${{ matrix.arch }}
         context: ./images/${{ env.IMAGE_NAME }}
         containerfiles: |
           ./images/${{ env.IMAGE_NAME }}/Dockerfile
         build-args: |
           bioconda_utils_version=${{ steps.prepare.outputs.bioconda_utils_version }}
+          base_image=${{ matrix.base_image }}
+          conda_arch=${{ matrix.uname_m }}
 
     - name: Test
       run: |
+        set -x
         image='${{ steps.buildah-build.outputs.image }}'
         ids="$(
           for tag in ${{ steps.buildah-build.outputs.tags }} ; do

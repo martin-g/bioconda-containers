@@ -1,6 +1,8 @@
 # Use the exact conda, mamba versions as used in bioconda-recipes' builds.
 ARG bioconda_utils_version='1.1.3'
-FROM quay.io/bioconda/bioconda-utils-build-env-cos7:${bioconda_utils_version} as bioconda-build-env
+ARG base_image='quay.io/bioconda/bioconda-utils-build-env-cos7'
+
+FROM ${base_image}:${bioconda_utils_version} as bioconda-build-env
 RUN /opt/conda/bin/conda list \
       --export '^(conda|mamba)$' \
       | sed -n 's/=[^=]*$//p' \
@@ -13,7 +15,8 @@ FROM quay.io/bioconda/base-glibc-debian-bash as build
 WORKDIR /tmp/work
 COPY --from=bioconda-build-env /tmp/requirements.txt ./
 COPY install-conda print-env-activate create-env ./
-RUN yum install -y wget && wget -o ./miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-$(uname -m).sh
+ARG conda_arch='x86_64'
+ADD https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-${conda_arch}.sh ./miniconda.sh
 
 RUN ./install-conda ./requirements.txt /opt/create-env
 
