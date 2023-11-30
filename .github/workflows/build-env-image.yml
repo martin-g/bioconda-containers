@@ -10,59 +10,73 @@ on:
     - '.github/workflows/build-env-image.yml'
 
 jobs:
-  # build:
-  #   name: Build image
-  #   runs-on: ubuntu-22.04
-  #   strategy:
-  #     matrix:
-  #       include:
-  #         - arch: arm64
-  #           image: bioconda-utils-build-env-cos7-aarch64
-  #           base_image: quay.io/condaforge/linux-anvil-aarch64
-  #         - arch: amd64
-  #           image: bioconda-utils-build-env-cos7
-  #           base_image: quay.io/condaforge/linux-anvil-cos7-x86_64
-  #   steps:
-  #   - uses: actions/checkout@v4
-  #     with:
-  #       fetch-depth: 0
+  build:
+    name: Build image - ${{ matrix.image }}
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            image: bioconda-utils-build-env-cos7-aarch64
+            base_image: quay.io/condaforge/linux-anvil-aarch64
+          - arch: amd64
+            image: bioconda-utils-build-env-cos7
+            base_image: quay.io/condaforge/linux-anvil-cos7-x86_64
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-  #   - id: get-tag
-  #     run: |
-  #       tag=${{ github.event.release && github.event.release.tag_name || github.sha }}
+    - id: get-tag
+      run: |
+        tag=${{ github.event.release && github.event.release.tag_name || github.sha }}
 
-  #       # https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
-  #       # printf %s "::set-output name=tag::${tag#v}"
-  #       printf %s "tag=${tag#v}" >> $GITHUB_OUTPUT
+        # https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
+        # printf %s "::set-output name=tag::${tag#v}"
+        printf %s "tag=${tag#v}" >> $GITHUB_OUTPUT
 
-  #   - name: Install qemu dependency
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install -y qemu-user-static
+    - name: Install qemu dependency
+      if: ${{ matrix.arch == 'arm64' }}
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: arm64
 
-  #   - name: Build image
-  #     id: buildah-build
-  #     uses: redhat-actions/buildah-build@v2
-  #     with:
-  #       image: ${{ matrix.image }}
-  #       arch: ${{ matrix.arch }}
-  #       build-args: |
-  #         BASE_IMAGE=${{ matrix.base_image }}
-  #       tags: >-
-  #         latest
-  #         ${{ steps.get-tag.outputs.tag }}
-  #       dockerfiles: |
-  #         ./Dockerfile
+    - name: Build image
+      id: buildah-build
+      uses: redhat-actions/buildah-build@v2
+      with:
+        image: ${{ matrix.image }}
+        arch: ${{ matrix.arch }}
+        build-args: |
+          BASE_IMAGE=${{ matrix.base_image }}
+        tags: >-
+          latest
+          ${{ steps.get-tag.outputs.tag }}
+        dockerfiles: |
+          ./images/build-env/Dockerfile
 
-  #   - name: Test built image
-  #     run: |
-  #       image='${{ steps.buildah-build.outputs.image }}'
-  #       for tag in ${{ steps.buildah-build.outputs.tags }} ; do
-  #         podman run --rm "${image}:${tag}" bioconda-utils --version
-  #       done
+    - name: Test built image
+      run: |
+        image='${{ steps.buildah-build.outputs.image }}'
+        for tag in ${{ steps.buildah-build.outputs.tags }} ; do
+          podman run --rm "${image}:${tag}" bioconda-utils --version
+        done
+
+    - name: Push To Quay
+      # if: github.ref == 'refs/heads/main' && github.repository == 'bioconda/bioconda-containers'
+      uses: redhat-actions/push-to-registry@v2
+      with:
+        image: ${{ steps.buildah-build.outputs.image }}
+        tags: ${{ steps.buildah-build.outputs.tags }}
+        # registry: ${{ secrets.QUAY_BIOCONDA_REPO }}
+        # username: ${{ secrets.QUAY_BIOCONDA_USERNAME }}
+        # password: ${{ secrets.QUAY_BIOCONDA_TOKEN }}
+        registry: quay.io
+        username: mgrigorov
+        password: ${{ secrets.QUAY_PASSWORD }}
 
   build-manifest:
-    # needs: [build]
+    needs: [build]
     # if: github.ref == 'refs/heads/main' && github.repository == 'bioconda/bioconda-containers'
     name: ${{ matrix.docker-registry }}/${{ matrix.cfg.DOCKER_MANIFEST }}:${{ matrix.cfg.DOCKER_TAG }}
     runs-on: ubuntu-latest
@@ -72,6 +86,7 @@ jobs:
         # docker-registry: [quay.io/bioconda]
         docker-registry: [quay.io/mgrigorov]
         cfg:
+          # TODO: What name to use for the manifest list ?
           - DOCKER_MANIFEST: bioconda-utils-build-env-cos7
             DOCKER_TAG: "latest"
             DOCKER_IMAGES: "<<ORG>>/bioconda-utils-build-env-cos7:<<TAG>>,<<ORG>>/bioconda-utils-build-env-cos7-aarch64:<<TAG>>"
@@ -91,8 +106,10 @@ jobs:
       - name: Login to Quay.io registry
         uses: docker/login-action@v2
         with:
+          # registry: ${{ secrets.QUAY_BIOCONDA_REPO }}
+          # username: ${{ secrets.QUAY_BIOCONDA_USERNAME }}
+          # password: ${{ secrets.QUAY_BIOCONDA_TOKEN }}
           registry: quay.io
-          # username: bioconda-bot
           username: mgrigorov
           password: ${{ secrets.QUAY_PASSWORD }}
     
