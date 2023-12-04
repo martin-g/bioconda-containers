@@ -17,22 +17,26 @@ jobs:
       matrix:
         include:
           - arch: arm64
-            image: bioconda-utils-build-env-cos7-aarch64
+            image: mgrigorov/bioconda-utils-build-env-cos7-aarch64
             base_image: quay.io/condaforge/linux-anvil-aarch64
           - arch: amd64
-            image: bioconda-utils-build-env-cos7
+            image: mgrigorov/bioconda-utils-build-env-cos7
             base_image: quay.io/condaforge/linux-anvil-cos7-x86_64
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout bioconda-containers
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Checkout bioconda-utils
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        repository: 'bioconda/bioconda-utils'
+        path: 'bioconda-utils'
 
     - id: get-tag
       run: |
         tag=${{ github.event.release && github.event.release.tag_name || github.sha }}
-
-        # https://github.blog/changelog/2022-10-11-github-actions-deprecating-save-state-and-set-output-commands/
-        # printf %s "::set-output name=tag::${tag#v}"
         printf %s "tag=${tag#v}" >> $GITHUB_OUTPUT
 
     - name: Install qemu dependency
