@@ -11,11 +11,11 @@ on:
 
 jobs:
   build:
-    name: Build image - ${{ matrix.image }}
+    name: Build image - ${{ matrix.cfg.image }}
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        include:
+        cfg:
           - arch: arm64
             image: bioconda/bioconda-utils-build-env-cos7-aarch64
             base_image: quay.io/condaforge/linux-anvil-aarch64
@@ -40,7 +40,7 @@ jobs:
         printf %s "tag=${tag#v}" >> $GITHUB_OUTPUT
 
     - name: Install qemu dependency
-      if: ${{ matrix.arch == 'arm64' }}
+      if: ${{ matrix.cfg.arch == 'arm64' }}
       uses: docker/setup-qemu-action@v3
       with:
         platforms: arm64
@@ -49,10 +49,10 @@ jobs:
       id: buildah-build
       uses: redhat-actions/buildah-build@v2
       with:
-        image: ${{ matrix.image }}
-        arch: ${{ matrix.arch }}
+        image: ${{ matrix.cfg.image }}
+        arch: ${{ matrix.cfg.arch }}
         build-args: |
-          BASE_IMAGE=${{ matrix.base_image }}
+          BASE_IMAGE=${{ matrix.cfg.base_image }}
         tags: >-
           latest
           ${{ steps.get-tag.outputs.tag }}
