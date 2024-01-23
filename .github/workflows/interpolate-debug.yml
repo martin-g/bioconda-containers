@@ -1,0 +1,59 @@
+name: Build image
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+    - 'images/build-env/**'
+    - '.github/workflows/interpolate-debug.yml'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'images/build-env/**'
+      - '.github/workflows/interpolate-debug.yml'
+
+env:
+  MAJOR_VERSION: 3
+  MINOR_VERSION: 0
+  DOCKER_MANIFEST: bioconda-utils-build-env-cos7
+  DOCKER_IMAGES: "quay.io/<<USER>>/bioconda-utils-build-env-cos7:<<TAG>>,quay.io/<<USER>>/bioconda-utils-build-env-cos7-aarch64:<<TAG>>"
+
+jobs:
+  build:
+    name: Build image - ${{ matrix.image }}
+    outputs:
+      image: $${{ env.DOCKER_MANIFEST }}
+      tags: ${{ steps.step1.outputs.tags }}
+    runs-on: ubuntu-22.04
+
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            image: bioconda/bioconda-utils-build-env-cos7-aarch64
+            base_image: quay.io/condaforge/linux-anvil-aarch64
+          - arch: amd64
+            image: bioconda/bioconda-utils-build-env-cos7-x86_64
+            base_image: quay.io/condaforge/linux-anvil-cos7-x86_64
+    steps:
+      - name: Step 1
+        id: step1
+        run: echo "tags=['latest', '${{ env.MAJOR_VERSION}}.${{ env.MINOR_VERSION }}', '${{ env.MAJOR_VERSION }}']" >> "$GITHUB_OUTPUT"
+
+  build-manifest:
+    needs: [build]
+    if: github.ref == 'refs/heads/main'
+    name: quay.io/bioconda/${{ needs.build.outputs.image }}:${{ matrix.tag }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tag: ${{ fromJson(needs.build.outputs.tags) }}
+
+    steps:
+      - name: Step 2
+        run: |
+          echo "Step 2: ${{ needs.build.outputs.image }}"
