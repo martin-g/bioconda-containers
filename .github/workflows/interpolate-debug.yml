@@ -15,14 +15,18 @@ on:
       - 'images/build-env/**'
       - '.github/workflows/interpolate-debug.yml'
 
+env:
+  MAJOR_VERSION: 3
+  MINOR_VERSION: 0
+  DOCKER_MANIFEST: bioconda-utils-build-env-cos7
+  DOCKER_IMAGES: "quay.io/<<USER>>/bioconda-utils-build-env-cos7:<<TAG>>,quay.io/<<USER>>/bioconda-utils-build-env-cos7-aarch64:<<TAG>>"
 
 jobs:
   build:
     name: Build image - ${{ matrix.image }}
+    outputs:
+      tags: ${{ steps.step1.outputs.tags }}
     runs-on: ubuntu-22.04
-    env:
-      MAJOR_VERSION: 3
-      MINOR_VERSION: 0
 
     strategy:
       matrix:
@@ -35,19 +39,18 @@ jobs:
             base_image: quay.io/condaforge/linux-anvil-cos7-x86_64
     steps:
       - name: Step 1
-        run: echo "Step 1"
+        id: step1
+        run: echo "tags=['latest']" >> "$GITHUB_OUTPUT"
+
   build-manifest:
     needs: [build]
-    if: github.ref == 'refs/heads/main' && github.repository == 'bioconda/bioconda-containers'
-    name: quay.io/bioconda/${{ matrix.DOCKER_MANIFEST }}:${{ matrix.DOCKER_TAG }}
+    if: github.ref == 'refs/heads/main'
+    name: quay.io/bioconda/bioconda-utils-build-env-cos7:${{ matrix.tag }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - DOCKER_MANIFEST: bioconda-utils-build-env-cos7
-            DOCKER_TAG: "latest"
-            DOCKER_IMAGES: "quay.io/<<USER>>/bioconda-utils-build-env-cos7:<<TAG>>,quay.io/<<USER>>/bioconda-utils-build-env-cos7-aarch64:<<TAG>>"
+        tag: ${{ fromJson(needs.build.outputs.tags) }}
 
     steps:
       - name: Step 2
