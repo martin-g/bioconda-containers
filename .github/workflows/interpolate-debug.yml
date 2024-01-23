@@ -45,7 +45,7 @@ jobs:
 
   build-manifest:
     needs: [build]
-    # if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main'
     name: quay.io/bioconda/${{ needs.build.outputs.image }}:${{ matrix.tag }}
     runs-on: ubuntu-latest
     strategy:
@@ -55,4 +55,5 @@ jobs:
 
     steps:
       - name: Step 2
-        run: echo "Step 2"
+        run: |
+          echo "Step 2: ${{ needs.build.outputs.image }}"
