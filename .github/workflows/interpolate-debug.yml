@@ -44,7 +44,7 @@ jobs:
 
   build-manifest:
     needs: [build]
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
     name: quay.io/bioconda/bioconda-utils-build-env-cos7:${{ matrix.tag }}
     runs-on: ubuntu-latest
     strategy:
