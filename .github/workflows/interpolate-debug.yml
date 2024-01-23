@@ -38,13 +38,13 @@ jobs:
         run: echo "Step 1"
   build-manifest:
     needs: [build]
-    # if: github.ref == 'refs/heads/main' && github.repository == 'bioconda/bioconda-containers'
-    name: quay.io/bioconda/${{ matrix.cfg.DOCKER_MANIFEST }}:${{ matrix.cfg.DOCKER_TAG }}
+    if: github.ref == 'refs/heads/main' && github.repository == 'bioconda/bioconda-containers'
+    name: quay.io/bioconda/${{ matrix.DOCKER_MANIFEST }}:${{ matrix.DOCKER_TAG }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        cfg:
+        include:
           - DOCKER_MANIFEST: bioconda-utils-build-env-cos7
             DOCKER_TAG: "latest"
             DOCKER_IMAGES: "quay.io/<<USER>>/bioconda-utils-build-env-cos7:<<TAG>>,quay.io/<<USER>>/bioconda-utils-build-env-cos7-aarch64:<<TAG>>"
