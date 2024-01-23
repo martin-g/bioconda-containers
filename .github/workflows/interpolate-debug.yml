@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Step 1
         id: step1
-        run: echo "tags=['latest']" >> "$GITHUB_OUTPUT"
+        run: echo "tags=['latest', '${{ env.MAJOR_VERSION}}.${{ env.MINOR_VERSION }}', '${{ env.MAJOR_VERSION }}']" >> "$GITHUB_OUTPUT"
 
   build-manifest:
     needs: [build]
