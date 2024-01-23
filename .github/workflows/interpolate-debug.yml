@@ -25,6 +25,7 @@ jobs:
   build:
     name: Build image - ${{ matrix.image }}
     outputs:
+      image: $${{ env.DOCKER_MANIFEST }}
       tags: ${{ steps.step1.outputs.tags }}
     runs-on: ubuntu-22.04
 
@@ -45,7 +46,7 @@ jobs:
   build-manifest:
     needs: [build]
     # if: github.ref == 'refs/heads/main'
-    name: quay.io/bioconda/bioconda-utils-build-env-cos7:${{ matrix.tag }}
+    name: quay.io/bioconda/${{ needs.build.outputs.image }}:${{ matrix.tag }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
