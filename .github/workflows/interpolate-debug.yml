@@ -1,0 +1,54 @@
+name: Build image
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+    - 'images/build-env/**'
+    - '.github/workflows/interpolate-debug.yml'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'images/build-env/**'
+      - '.github/workflows/interpolate-debug.yml'
+
+
+jobs:
+  build:
+    name: Build image - ${{ matrix.image }}
+    runs-on: ubuntu-22.04
+    env:
+      MAJOR_VERSION: 3
+      MINOR_VERSION: 0
+
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            image: bioconda/bioconda-utils-build-env-cos7-aarch64
+            base_image: quay.io/condaforge/linux-anvil-aarch64
+          - arch: amd64
+            image: bioconda/bioconda-utils-build-env-cos7-x86_64
+            base_image: quay.io/condaforge/linux-anvil-cos7-x86_64
+    steps:
+      - name: Step 1
+        run: echo "Step 1"
+  build-manifest:
+    needs: [build]
+    if: github.ref == 'refs/heads/main' && github.repository == 'bioconda/bioconda-containers'
+    name: quay.io/bioconda/${{ matrix.DOCKER_MANIFEST }}:${{ matrix.DOCKER_TAG }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - DOCKER_MANIFEST: bioconda-utils-build-env-cos7
+            DOCKER_TAG: "latest"
+            DOCKER_IMAGES: "quay.io/<<USER>>/bioconda-utils-build-env-cos7:<<TAG>>,quay.io/<<USER>>/bioconda-utils-build-env-cos7-aarch64:<<TAG>>"
+
+    steps:
+      - name: Step 2
+        run: echo "Step 2"
